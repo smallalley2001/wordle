@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wordle</title>
+    <link rel="icon" type="image/png" href="img/wordle.png">  
+    <link rel="manifest" href="manifest.json">  
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Brython runtime -->
+    <script type="text/javascript" src="js/brython.js"></script>
+    <script type="text/javascript" src="js/brython_stdlib.js"></script>
+
+    <!-- Load Brython on page load -->
+    <script type="text/javascript" src="js/load_brython.js"></script>
+</head>
+
+<body>
+    <!-- Logo -->
+    <img src="img/wordle.png" alt="Wordle Logo" width="200" height="200">
+
+    <!-- Application Name -->
+    <h1>Wordle</h1>
+
+    <!-- Version -->
+    <h3>Version 1.0</h3>
+
+    <!-- Buttons -->
+    <div class="container">
+        <button id="classic-btn">Classic</button>
+    </div>
+    <div class="container">    
+        <button id="advance-btn">Advance</button>
+    </div>
+    <div class="container">
+         <button id="about-btn">About</button>
+    </div>
+
+    <!-- Optional Game Board -->
+    <div id="game-board" class="game-board"></div>
+
+    <!-- Brython game logic -->
+    <script type="text/python" src="js/index.bry"></script>
+</body>
+</html>

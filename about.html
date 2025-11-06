@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About – Wordle Classic</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon" href="img/wordle.png">
+
+    <script type="text/javascript" src="js/brython.js"></script>
+    <script type="text/javascript" src="js/brython_stdlib.js"></script>
+
+        
+    <!-- Load Brython on page load -->
+    <script type="text/javascript" src="js/load_brython.js"></script>
+            
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>About Wordle Classic</h1>
+        </header>
+
+        <main>
+            <section class="info-section">
+                <h2>🎯 How to Play</h2>
+                <p>
+                    Guess the <strong>5-letter word (classic)</strong> or <strong>6-letter word (advance)</strong> in six tries or fewer.
+                    Each guess must be a valid word.
+                    After each guess, the color of the tiles changes to show how close your guess was to the correct word:
+                </p>
+                <ul>
+                    <li><span class="tile correct">G</span> – Correct letter in the correct spot</li>
+                    <li><span class="tile present">A</span> – Correct letter in the wrong spot</li>
+                    <li><span class="tile absent">B</span> – Letter not in the word</li>
+                </ul>
+            </section>
+
+            <section class="info-section">
+                <h2>📱 Progressive Web App (PWA)</h2>
+                <p>
+                    You can install this Wordle game directly onto your device for an app-like experience.
+                    Simply click your browser’s <strong>Install</strong> or <strong>Add to Home Screen</strong> option.
+                    Once installed, you can play even when offline!
+                </p>
+            </section>
+
+            <section class="info-section">
+                <h2>📝 Adding New Words</h2>
+                <p>
+                    If you try a word that isn’t in the word list, you’ll be given the option to add it.
+                    Added words are stored in your browser’s <strong>local storage</strong> and remain available
+                    the next time you play — even offline.
+                </p>
+                <p class="note">
+                    ⚠️ <strong>Note:</strong> If you clear your browser cache or site data,
+                    all added words will be removed.
+                </p>
+            </section>
+        </main>
+
+        <footer>
+            <button id="back-btn" class="btn">⬅ Back</button>
+        </footer>
+    </div>
+    
+    
+    <script type="text/python" src="js/about.bry"></script>
+        
+</body>
+</html>

@@ -1,0 +1,6 @@
+from browser import document, window
+
+def go_back(ev):
+    window.location.href = "index.html"
+
+document["back-btn"].bind("click", go_back)

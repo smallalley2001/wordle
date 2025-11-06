@@ -1,0 +1,59 @@
+from browser import document, window, ajax
+
+def log(msg):
+    print(f"[Wordle] {msg}")
+
+def load_json(path, callback):
+    req = ajax.ajax()
+    def on_complete(ev):
+        if req.status == 200:
+            log(f"Loaded {path}")
+            callback(req.text)
+        else:
+            log(f"❌ Error loading {path} (status: {req.status})")
+    req.bind('complete', on_complete)
+    req.open('GET', path, True)
+    req.send()
+
+def save_to_localstorage(key, data):
+    window.localStorage.setItem(key, data)
+    log(f"Saved {key} to localStorage")
+
+def preload_wordlists():
+    lists = [
+        ("wordlist_5.json", "wordlist_5"),
+        ("wordlist_6.json", "wordlist_6"),
+        ("guesslist_5.json", "guesslist_5"),
+        ("guesslist_6.json", "guesslist_6"),
+    ]
+
+    # Check if all lists already exist in localStorage
+    all_present = all(window.localStorage.getItem(key) for _, key in lists)
+
+    if all_present:
+        log("✅ All word lists already loaded in localStorage.")
+        return
+    else:
+        log("⏳ Loading word lists...")
+
+    for file, key in lists:
+        if not window.localStorage.getItem(key):
+            load_json(f"wordlist/{file}", lambda data, k=key: save_to_localstorage(k, data))
+
+# Navigation logic
+def go_to_page(event):
+    button_id = event.target.id
+    if button_id == "classic-btn":
+        window.location.href = "classic.html"
+    elif button_id == "advance-btn":
+        window.location.href = "advance.html"
+    elif button_id == "about-btn":
+        window.location.href = "about.html"
+
+# Run preload
+preload_wordlists()
+
+# Attach event listeners
+document["classic-btn"].bind("click", go_to_page)
+document["advance-btn"].bind("click", go_to_page)
+document["about-btn"].bind("click", go_to_page)

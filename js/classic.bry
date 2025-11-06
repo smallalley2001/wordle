@@ -1,0 +1,233 @@
+from browser import document, html, window, alert, confirm
+import json, random
+
+# --- Load Word Lists from localStorage ---
+def load_wordlists():
+    try:
+        wordlist_5 = json.loads(window.localStorage["wordlist_5"])
+        guesslist_5 = json.loads(window.localStorage["guesslist_5"])
+        return wordlist_5, guesslist_5
+    except Exception as e:
+        print(f"[Wordle] ❌ Failed to load word lists: {e}")
+        return [], []
+
+valid_words, answer_words = load_wordlists()
+
+# --- Initialize global variables ---
+TARGET = ""
+current_row = 0
+current_guess = ""
+MAX_TRIES = 6
+WORD_LENGTH = 5
+
+board = document["game-board"]
+keyboard_div = document["keyboard"]
+keyboard_buttons = {}
+
+# --- Build on-screen keyboard layout (once) ---
+keyboard_layout = [
+    "QWERTYUIOP",
+    "ASDFGHJKL",
+    "ZXCVBNM"
+]
+
+def build_keyboard():
+    """Builds the on-screen keyboard."""
+    keyboard_div.clear()
+    keyboard_buttons.clear()
+
+    for row in keyboard_layout[:2]:
+        row_div = html.DIV(Class="key-row")
+        for ch in row:
+            btn = html.BUTTON(ch, Class="key")
+            keyboard_buttons[ch] = btn
+            btn.bind("click", lambda ev, c=ch: handle_key(c))
+            row_div <= btn
+        keyboard_div <= row_div
+
+    # Third row
+    third_row = html.DIV(Class="key-row")
+
+    delete_btn = html.BUTTON("Del", Class="key large")
+    delete_btn.bind("click", lambda ev: handle_key("Del"))
+    third_row <= delete_btn
+
+    for ch in "ZXCVBNM":
+        btn = html.BUTTON(ch, Class="key")
+        keyboard_buttons[ch] = btn
+        btn.bind("click", lambda ev, c=ch: handle_key(c))
+        third_row <= btn
+
+    enter_btn = html.BUTTON("Enter", Class="key large")
+    enter_btn.bind("click", lambda ev: handle_key("Enter"))
+    third_row <= enter_btn
+
+    keyboard_div <= third_row
+
+
+# --- Build 6x5 board ---
+def build_board():
+    board.clear()
+    for _ in range(MAX_TRIES):
+        row_div = html.DIV(Class="row")
+        for _ in range(WORD_LENGTH):
+            tile = html.DIV(Class="tile")
+            row_div <= tile
+        board <= row_div
+
+
+# --- Choose random target ---
+def choose_target():
+    global TARGET
+    TARGET = random.choice(answer_words).upper() if answer_words else "BRYTH"
+
+
+# --- Update display ---
+def update_row_display():
+    row_div = board.children[current_row]
+    for i, tile in enumerate(row_div.children):
+        tile.text = current_guess[i] if i < len(current_guess) else ""
+
+
+# --- Update keyboard feedback ---
+def update_keyboard_feedback(letter, status):
+    btn = keyboard_buttons.get(letter)
+    if not btn:
+        return
+
+    if status == "correct":
+        btn.style.backgroundColor = "#6aaa64"  # green
+        btn.style.color = "white"
+    elif status == "present":
+        if btn.style.backgroundColor not in ("rgb(106, 170, 100)", "#6aaa64"):
+            btn.style.backgroundColor = "#c9b458"  # yellow
+            btn.style.color = "white"
+    elif status == "absent":
+        if btn.style.backgroundColor not in (
+            "rgb(106, 170, 100)",
+            "#6aaa64",
+            "rgb(201, 180, 88)",
+            "#c9b458"
+        ):
+            btn.style.backgroundColor = "#3a3a3c"
+            btn.style.color = "white"
+
+
+# --- Handle input ---
+def handle_key(key):
+    global current_guess, current_row, valid_words, answer_words
+
+    if key == "Del":
+        current_guess = current_guess[:-1]
+    elif key == "Enter":
+        if len(current_guess) != WORD_LENGTH:
+            alert("[Wordle] Not enough letters.")
+            return
+
+        guess = current_guess.lower()
+        if guess not in valid_words:
+            # Ask if the player wants to add it
+            if confirm(f"'{guess}' is not in the word list. Add it as a valid word?"):
+            
+                if confirm(f"Please confirm again that you want to add '{guess}' into the word list."):
+                    valid_words.append(guess)
+                    answer_words.append(guess)
+                    try:
+                        wl = json.loads(window.localStorage["wordlist_5"])
+                        gl = json.loads(window.localStorage["guesslist_5"])
+                        if guess not in wl:
+                            wl.append(guess)
+                            window.localStorage["wordlist_5"] = json.dumps(wl)
+                        if guess not in gl:
+                            gl.append(guess)
+                            window.localStorage["guesslist_5"] = json.dumps(gl)
+                        alert(f"'{guess}' added successfully!")
+                    except Exception as e:
+                        alert(f"⚠️ Failed to save new word: {e}")
+            else:
+                return
+
+        # Evaluate guess
+        row_div = board.children[current_row]
+        target_copy = list(TARGET)
+        guess_result = [""] * WORD_LENGTH
+
+        # Correct letters first
+        for i in range(WORD_LENGTH):
+            if current_guess[i] == TARGET[i]:
+                guess_result[i] = "correct"
+                target_copy[i] = None
+
+        # Then check present/absent
+        for i in range(WORD_LENGTH):
+            if guess_result[i] == "":
+                if current_guess[i] in target_copy:
+                    guess_result[i] = "present"
+                    target_copy[target_copy.index(current_guess[i])] = None
+                else:
+                    guess_result[i] = "absent"
+
+        # Color tiles + update keyboard
+        for i, tile in enumerate(row_div.children):
+            letter = current_guess[i]
+            tile.class_name = f"tile {guess_result[i]}"
+            tile.text = letter
+            update_keyboard_feedback(letter, guess_result[i])
+
+        # Win or lose
+        if current_guess == TARGET:
+            alert("🎉 Congratulations! You guessed the word!")
+            return
+
+        current_row += 1
+        current_guess = ""
+
+        if current_row >= MAX_TRIES:
+            alert(f"❌ Out of tries! The word was: {TARGET}")
+            return
+    else:
+        if len(current_guess) < WORD_LENGTH:
+            current_guess += key
+
+    update_row_display()
+
+
+# --- Physical keyboard support ---
+def on_keypress(ev):
+    key = ev.key.upper()
+    if key in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+        handle_key(key)
+    elif key == "ENTER":
+        handle_key("Enter")
+    elif key in ("BACKSPACE", "DELETE"):
+        handle_key("Del")
+
+window.bind("keydown", on_keypress)
+
+
+# --- Restart logic ---
+def restart_game(ev=None):
+    global current_row, current_guess
+    if confirm("Restart the game?"):
+        current_row = 0
+        current_guess = ""
+        build_board()
+        build_keyboard()
+        choose_target()
+
+
+# --- Back button ---
+def go_back(ev):
+    if confirm("Are you sure you want to return to the menu?"):
+        window.location.href = "index.html"
+
+
+# --- Initialize ---
+def init():
+    build_board()
+    build_keyboard()
+    choose_target()
+    document["back-btn"].bind("click", go_back)
+    document["restart-btn"].bind("click", restart_game)
+
+init()

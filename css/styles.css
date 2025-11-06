@@ -1,0 +1,174 @@
+/* ====== Global Styles ====== */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+body {
+    background-color: #d9ebff; /* soft light blue */
+    font-family: monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 30px; /* space at the top */
+    min-height: 100vh;
+    text-align: center;
+}
+
+/* ====== Container ====== */
+.container {
+    display: flex;
+    flex-wrap: wrap;          /* wrap buttons on small screens */
+    justify-content: center;
+    gap: 10px;
+    width: 90%;
+    max-width: 500px;
+    margin-top: 20px;
+}
+
+/* ====== Headings ====== */
+h1, h2, h3 {
+    margin: 10px 0;
+    color: #003366; /* dark blue */
+}
+
+/* ====== Logo ====== */
+img {
+    max-width: 80%;
+    height: auto;
+}
+
+/* ====== Buttons ====== */
+button {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-family: monospace;
+    font-size: 1rem;
+    cursor: pointer;
+    flex: 1 1 120px;  /* grow/shrink, min width */
+    transition: background-color 0.2s ease;
+}
+
+button:hover {
+    background-color: #357ab7;
+}
+
+/* Back button same style as others */
+.back-btn {
+    margin-top: 20px;
+    flex: none;
+    width: auto;
+}
+
+/* ====== Game Board ====== */
+.game-board {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: repeat(5, 60px);
+    gap: 6px;
+}
+
+/* ====== Game Board for Advance Mode (6-letter words) ====== */
+.game-board-advance .row {
+    display: grid;
+    grid-template-columns: repeat(6, 60px); /* 6 tiles per row */
+    gap: 6px;
+}
+
+.tile {
+    width: 60px;
+    height: 60px;
+    border: 2px solid #d3d6da;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    background-color: white;
+    border-radius: 6px;
+}
+
+/* Tile color states */
+.tile.correct {
+    background-color: #6aaa64;
+    border-color: #6aaa64;
+    color: white;
+}
+.tile.present {
+    background-color: #c9b458;
+    border-color: #c9b458;
+    color: white;
+}
+.tile.absent {
+    background-color: #787c7e;
+    border-color: #787c7e;
+    color: white;
+}
+
+/* ====== Keyboard ====== */
+.keyboard {
+    margin-top: 1.5em;
+    display: grid;
+    grid-template-rows: repeat(3, auto);
+    gap: 6px;
+    justify-items: center;
+}
+
+.key-row {
+    display: flex;
+    gap: 6px;
+}
+
+.key {
+    background-color: #d3d6da;
+    border: none;
+    border-radius: 4px;
+    padding: 0.7em 0.6em;
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.key.large {
+    flex: 1.5;
+}
+
+/* ====== Footer / small text ====== */
+footer {
+    margin-top: 40px;
+    color: #003366;
+    font-size: 0.9rem;
+}
+
+/* ====== Responsive Text Sizes ====== */
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+    h3 {
+        font-size: 1rem;
+    }
+    button {
+        font-size: 0.9rem;
+        padding: 8px 16px;
+    }
+    .tile {
+        font-size: 1.2rem;
+        width: 50px;
+        height: 50px;
+    }
+}
