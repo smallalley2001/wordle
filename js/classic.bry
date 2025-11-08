@@ -1,17 +1,23 @@
 from browser import document, html, window, alert, confirm
 import json, random
 
-# --- Load Word Lists from localStorage ---
-def load_wordlists():
+# --- Load Word List from localStorage ---
+def load_wordlist():
     try:
-        wordlist_5 = json.loads(window.localStorage["wordlist_5"])
-        guesslist_5 = json.loads(window.localStorage["guesslist_5"])
-        return wordlist_5, guesslist_5
+        # If not yet loaded, fetch it now
+        if not window.localStorage.getItem("guesslist_5"):
+            from browser import ajax
+            req = ajax.ajax()
+            req.open("GET", "wordlist/guesslist_5.json", False)  # synchronous load
+            req.send()
+            if req.status == 200:
+                window.localStorage["guesslist_5"] = req.text
+        return json.loads(window.localStorage["guesslist_5"])
     except Exception as e:
-        print(f"[Wordle] ❌ Failed to load word lists: {e}")
-        return [], []
-
-valid_words, answer_words = load_wordlists()
+        print(f"[Wordle] ❌ Failed to load word list: {e}")
+        return []
+        
+wordlist = load_wordlist()
 
 # --- Initialize global variables ---
 TARGET = ""
@@ -79,7 +85,7 @@ def build_board():
 # --- Choose random target ---
 def choose_target():
     global TARGET
-    TARGET = random.choice(answer_words).upper() if answer_words else "BRYTH"
+    TARGET = random.choice(wordlist).upper() if wordlist else "BRYTH"
 
 
 # --- Update display ---
@@ -115,7 +121,7 @@ def update_keyboard_feedback(letter, status):
 
 # --- Handle input ---
 def handle_key(key):
-    global current_guess, current_row, valid_words, answer_words
+    global current_guess, current_row, wordlist
 
     if key == "Del":
         current_guess = current_guess[:-1]
@@ -125,22 +131,16 @@ def handle_key(key):
             return
 
         guess = current_guess.lower()
-        if guess not in valid_words:
+        if guess not in wordlist:
             # Ask if the player wants to add it
             if confirm(f"'{guess}' is not in the word list. Add it as a valid word?"):
-            
-                if confirm(f"Please confirm again that you want to add '{guess}' into the word list."):
-                    valid_words.append(guess)
-                    answer_words.append(guess)
+                if confirm(f"Please confirm again to add '{guess}' into the list."):
+                    wordlist.append(guess)
                     try:
-                        wl = json.loads(window.localStorage["wordlist_5"])
-                        gl = json.loads(window.localStorage["guesslist_5"])
+                        wl = json.loads(window.localStorage["guesslist_5"])
                         if guess not in wl:
                             wl.append(guess)
-                            window.localStorage["wordlist_5"] = json.dumps(wl)
-                        if guess not in gl:
-                            gl.append(guess)
-                            window.localStorage["guesslist_5"] = json.dumps(gl)
+                            window.localStorage["guesslist_5"] = json.dumps(wl)
                         alert(f"'{guess}' added successfully!")
                     except Exception as e:
                         alert(f"⚠️ Failed to save new word: {e}")

@@ -20,9 +20,8 @@ def save_to_localstorage(key, data):
     log(f"Saved {key} to localStorage")
 
 def preload_wordlists():
+    # Only use guess lists now
     lists = [
-        ("wordlist_5.json", "wordlist_5"),
-        ("wordlist_6.json", "wordlist_6"),
         ("guesslist_5.json", "guesslist_5"),
         ("guesslist_6.json", "guesslist_6"),
     ]
@@ -31,10 +30,10 @@ def preload_wordlists():
     all_present = all(window.localStorage.getItem(key) for _, key in lists)
 
     if all_present:
-        log("✅ All word lists already loaded in localStorage.")
+        log("✅ All guess lists already loaded in localStorage.")
         return
     else:
-        log("⏳ Loading word lists...")
+        log("⏳ Loading guess lists...")
 
     for file, key in lists:
         if not window.localStorage.getItem(key):

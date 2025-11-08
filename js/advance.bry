@@ -1,17 +1,17 @@
 from browser import document, html, window, alert, confirm
 import json, random
 
-# --- Load Word Lists from localStorage ---
-def load_wordlists():
+# --- Load Word List from localStorage ---
+def load_wordlist():
     try:
-        wordlist_6 = json.loads(window.localStorage["wordlist_6"])
-        guesslist_6 = json.loads(window.localStorage["guesslist_6"])
-        return wordlist_6, guesslist_6
+        wordlist = json.loads(window.localStorage["guesslist_6"])
+        return wordlist
     except Exception as e:
-        print(f"[Wordle Advance] ❌ Failed to load word lists: {e}")
-        return [], []
+        print(f"[Wordle Advance] ❌ Failed to load word list: {e}")
+        return []
 
-valid_words, answer_words = load_wordlists()
+valid_words = load_wordlist()
+answer_words = valid_words.copy()  # use same list for both
 
 # --- Initialize global variables ---
 TARGET = ""
@@ -128,11 +128,7 @@ def handle_key(key):
                     valid_words.append(guess)
                     answer_words.append(guess)
                     try:
-                        wl = json.loads(window.localStorage["wordlist_6"])
                         gl = json.loads(window.localStorage["guesslist_6"])
-                        if guess not in wl:
-                            wl.append(guess)
-                            window.localStorage["wordlist_6"] = json.dumps(wl)
                         if guess not in gl:
                             gl.append(guess)
                             window.localStorage["guesslist_6"] = json.dumps(gl)
