@@ -1,5 +1,5 @@
 const BASE = '/wordle/';
-const CACHE_NAME = 'wordle-cache-v2';
+const CACHE_NAME = 'wordle-cache-v3';
 
 const urlsToCache = [
   BASE,
@@ -30,6 +30,7 @@ const urlsToCache = [
   BASE + 'manifest.json'
 ];
 
+// Install event — cache all files
 self.addEventListener('install', event => {
   console.log('🧩 Service Worker: Installed');
   event.waitUntil(
@@ -43,27 +44,45 @@ self.addEventListener('install', event => {
   self.skipWaiting();
 });
 
+// Activate event — remove old caches
 self.addEventListener('activate', event => {
   console.log('🧩 Service Worker: Activated');
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys
-        .filter(k => k !== CACHE_NAME)
-        .map(k => caches.delete(k))
+        .filter(key => key !== CACHE_NAME)
+        .map(key => caches.delete(key))
       )
     )
   );
   self.clients.claim();
 });
 
+// Fetch event — serve from cache first
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request, { ignoreSearch: true })
-      .then(cached => cached || fetch(event.request))
-      .catch(() => {
-        if (event.request.mode === 'navigate') {
-          return caches.match(BASE + 'index.html');
-        }
+  if (event.request.mode === 'navigate') {
+    // Handle page navigation requests
+    event.respondWith(
+      caches.match(event.request, { ignoreSearch: true }).then(cached => {
+        return cached || caches.match(BASE + 'index.html');
       })
-  );
+    );
+  } else {
+    // Handle other requests (CSS, JS, images, Brython scripts)
+    event.respondWith(
+      caches.match(event.request, { ignoreSearch: true })
+        .then(cached => {
+          if (cached) return cached;
+          return fetch(event.request).then(response => {
+            // Optional: dynamically cache fetched requests
+            return caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, response.clone());
+              return response;
+            });
+          }).catch(() => {
+            // Could return a default fallback image or nothing
+          });
+        })
+    );
+  }
 });
