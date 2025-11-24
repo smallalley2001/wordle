@@ -5,6 +5,13 @@
     <title>Wordle</title>
     <link rel="icon" type="image/png" href="img/wordle.png">  
     <link rel="manifest" href="manifest.json">  
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/wordle/service-worker.js')
+          .then(() => console.log('Service Worker registered'))
+          .catch(err => console.error('SW registration failed:', err));
+    }
+    </script>    
     
     <!-- Stylesheet -->
     <link rel="stylesheet" href="css/styles.css">
