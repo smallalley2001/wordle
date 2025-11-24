@@ -2,24 +2,24 @@
   "name": "Wordle",
   "short_name": "Wordle",
   "description": "A fun Wordle game built with Brython and installable as a PWA.",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/wordle/index.html",
+  "scope": "/wordle/",
   "display": "standalone",
   "background_color": "#d9ebff",
   "theme_color": "#4a90e2",
   "icons": [
     {
-      "src": "img/wordle_192.png",
+      "src": "/wordle/img/wordle_192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "img/wordle_512.png",
+      "src": "/wordle/img/wordle_512.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "img/wordle.png",
+      "src": "/wordle/img/wordle.png",
       "sizes": "1024x1024",
       "type": "image/png"
     }

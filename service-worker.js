@@ -1,57 +1,68 @@
-// service-worker.js
-const CACHE_NAME = 'wordle-cache-v1';
+const BASE = '/wordle/';
+const CACHE_NAME = 'wordle-cache-v2';
+
 const urlsToCache = [
-  '/index.html',
-  '/classic.html',
-  '/advance.html',
-  '/about.html',
-  '/css/styles.css',
-  '/js/brython.js',
-  '/js/brython_stdlib.js',
-  '/js/load_brython.js',
-  '/js/classic.bry',
-  '/js/advance.bry',
-  '/js/index.bry',
-  '/img/wordle.png',
-  '/manifest.json'
+  BASE,
+  BASE + 'index.html',
+  BASE + 'classic.html',
+  BASE + 'advance.html',
+  BASE + 'about.html',
+
+  // CSS
+  BASE + 'css/styles.css',
+
+  // JS & Brython
+  BASE + 'js/brython.js',
+  BASE + 'js/brython_stdlib.js',
+  BASE + 'js/load_brython.js',
+
+  // Brython scripts
+  BASE + 'js/classic.bry',
+  BASE + 'js/advance.bry',
+  BASE + 'js/index.bry',
+
+  // Images
+  BASE + 'img/wordle.png',
+  BASE + 'img/wordle_192.png',
+  BASE + 'img/wordle_512.png',
+
+  // Manifest
+  BASE + 'manifest.json'
 ];
 
-// Install event — cache files
 self.addEventListener('install', event => {
+  console.log('🧩 Service Worker: Installed');
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-      .then(() => self.skipWaiting())
+      .then(cache => Promise.all(
+        urlsToCache.map(url =>
+          cache.add(url).catch(err => console.warn('⚠️ Failed to cache:', url, err))
+        )
+      ))
   );
+  self.skipWaiting();
 });
 
-// Activate event — remove old caches if any
 self.addEventListener('activate', event => {
+  console.log('🧩 Service Worker: Activated');
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(name => {
-          if (name !== CACHE_NAME) {
-            return caches.delete(name);
-          }
-        })
-      );
-    }).then(() => self.clients.claim())
+    caches.keys().then(keys =>
+      Promise.all(keys
+        .filter(k => k !== CACHE_NAME)
+        .map(k => caches.delete(k))
+      )
+    )
   );
+  self.clients.claim();
 });
 
-// Fetch event — serve from cache first, then network
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Return cached response if found, else fetch from network
-        return response || fetch(event.request);
-      })
+    caches.match(event.request, { ignoreSearch: true })
+      .then(cached => cached || fetch(event.request))
       .catch(() => {
-        // Optional: fallback for offline case
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
+          return caches.match(BASE + 'index.html');
         }
       })
   );
