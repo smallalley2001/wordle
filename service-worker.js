@@ -1,5 +1,5 @@
 const BASE = self.registration.scope.replace(location.origin, "");
-const CACHE_NAME = "wordle-cache-v6"; // bump version
+const CACHE_NAME = "wordle-cache-v6"; // bumped version
 
 // Pre-cache static resources
 const urlsToCache = [
@@ -21,7 +21,7 @@ const urlsToCache = [
   BASE + "manifest.json"
 ];
 
-// Install
+// Install: pre-cache everything
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
@@ -29,7 +29,7 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 });
 
-// Activate
+// Activate: remove old caches
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -39,10 +39,9 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
-// Fetch
+// Fetch: offline-first with runtime caching + navigation fallback
 self.addEventListener("fetch", event => {
   const request = event.request;
-  // Remove query string for cache matching
   const urlWithoutQuery = request.url.split("?")[0];
 
   event.respondWith(
@@ -50,13 +49,18 @@ self.addEventListener("fetch", event => {
       if (cached) return cached;
 
       return fetch(urlWithoutQuery).then(response => {
-        // Cache dynamically under query-free URL
+        // Clone response immediately for caching
+        const responseClone = response.clone();
+
+        // Cache dynamically any GET requests that succeed
         if (request.method === "GET" && response.status === 200) {
-          caches.open(CACHE_NAME).then(cache => cache.put(urlWithoutQuery, response.clone()));
+          caches.open(CACHE_NAME).then(cache => cache.put(urlWithoutQuery, responseClone));
         }
+
+        // Return the original response to the page
         return response;
       }).catch(() => {
-        // Offline fallback for navigation
+        // Offline fallback for navigation (HTML requests)
         if (request.destination === "document") {
           return caches.match(BASE + "index.html");
         }
