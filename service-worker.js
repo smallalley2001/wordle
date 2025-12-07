@@ -4,7 +4,7 @@
 const BASE = self.registration.scope.replace(location.origin, "");
 
 // Cache version — bump when deploying changes
-const CACHE_NAME = "wordle-cache-v11";
+const CACHE_NAME = "wordle-cache-v12";
 
 // List of static resources to pre-cache
 const urlsToCache = [
@@ -24,7 +24,7 @@ const urlsToCache = [
     BASE + "img/wordle.png",
     BASE + "img/wordle_192.png",
     BASE + "img/wordle_512.png",
-    BASE + "favicon.ico",      // <== include favicon
+    BASE + "favicon.ico",
     BASE + "manifest.json"
 ];
 
@@ -48,7 +48,7 @@ self.addEventListener("activate", event => {
     self.clients.claim();
 });
 
-// Fetch: offline-first strategy with runtime caching
+// Fetch: offline-first strategy with safe runtime caching
 self.addEventListener("fetch", event => {
     const request = event.request;
 
@@ -67,14 +67,16 @@ self.addEventListener("fetch", event => {
                 }
                 return response;
             }).catch(() => {
-                // Offline fallback
+                // Offline fallback for navigation (HTML pages)
                 if (request.mode === "navigate") {
-                    // HTML navigation -> serve index.html
                     return caches.match(BASE + "index.html");
                 }
-                // For other requests (scripts, CSS, images, Brython files), try cache ignoring query
-                return caches.match(key, { ignoreSearch: true })
-                    .then(c => c || new Response("Offline resource not available", { status: 404, statusText: "Offline" }));
+                // Offline fallback for other requests (scripts, CSS, images, Brython files, favicon)
+                return new Response("", {
+                    status: 200,
+                    statusText: "Offline",
+                    headers: { "Content-Type": "text/plain" }
+                });
             });
         })
     );
