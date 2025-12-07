@@ -1,12 +1,8 @@
 // Wordle PWA Service Worker
 
-// Base path for GitHub Pages subfolder PWAs
 const BASE = self.registration.scope.replace(location.origin, "");
+const CACHE_NAME = "wordle-cache-v13";
 
-// Cache version — bump when deploying changes
-const CACHE_NAME = "wordle-cache-v12";
-
-// List of static resources to pre-cache
 const urlsToCache = [
     BASE,
     BASE + "index.html",
@@ -28,15 +24,23 @@ const urlsToCache = [
     BASE + "manifest.json"
 ];
 
-// Install: pre-cache all static assets
+// Install: pre-cache assets safely
 self.addEventListener("install", event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
+        caches.open(CACHE_NAME).then(cache => {
+            return Promise.all(
+                urlsToCache.map(url =>
+                    cache.add(url).catch(err => {
+                        console.warn("Failed to cache:", url, err);
+                    })
+                )
+            );
+        })
     );
     self.skipWaiting();
 });
 
-// Activate: remove old caches
+// Activate
 self.addEventListener("activate", event => {
     event.waitUntil(
         caches.keys().then(keys =>
@@ -48,11 +52,9 @@ self.addEventListener("activate", event => {
     self.clients.claim();
 });
 
-// Fetch: offline-first strategy with safe runtime caching
+// Fetch
 self.addEventListener("fetch", event => {
     const request = event.request;
-
-    // Normalize URL: remove origin & query string for cache matching
     let key = request.url.replace(location.origin, "").split("?")[0];
 
     event.respondWith(
@@ -60,23 +62,21 @@ self.addEventListener("fetch", event => {
             if (cached) return cached;
 
             return fetch(request).then(response => {
-                // Clone response for caching
                 if (request.method === "GET" && response.ok) {
                     const responseClone = response.clone();
                     caches.open(CACHE_NAME).then(cache => cache.put(key, responseClone));
                 }
                 return response;
             }).catch(() => {
-                // Offline fallback for navigation (HTML pages)
                 if (request.mode === "navigate") {
                     return caches.match(BASE + "index.html");
                 }
-                // Offline fallback for other requests (scripts, CSS, images, Brython files, favicon)
-                return new Response("", {
-                    status: 200,
-                    statusText: "Offline",
-                    headers: { "Content-Type": "text/plain" }
-                });
+                return caches.match(key, { ignoreSearch: true })
+                    .then(c => c || new Response("", {
+                        status: 200,
+                        statusText: "Offline",
+                        headers: { "Content-Type": "text/plain" }
+                    }));
             });
         })
     );
