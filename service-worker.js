@@ -1,38 +1,54 @@
-// Wordle PWA Service Worker
-const CACHE_NAME = "wordle-cache-v4";
+// Wordle PWA Service Worker - Auto-cache folders, query-safe fetch
+const CACHE_NAME = "wordle-cache-v5";
 const BASE = "/wordle/";
 
-// List all assets Wordle uses
-const ASSETS = [
+// Core files
+const CORE_ASSETS = [
   `${BASE}`,
   `${BASE}index.html`,
   `${BASE}classic.html`,
   `${BASE}advance.html`,
   `${BASE}about.html`,
   `${BASE}manifest.json`,
-  `${BASE}css/styles.css`,
-  `${BASE}js/brython.js`,
-  `${BASE}js/brython_stdlib.js`,
-  `${BASE}js/load_brython.js`,
-  `${BASE}js/classic.bry`,
-  `${BASE}js/advance.bry`,
-  `${BASE}js/index.bry`,
-  `${BASE}js/about.bry`,
-  `${BASE}img/wordle.png`,
-  `${BASE}img/wordle_192.png`,
-  `${BASE}img/wordle_512.png`,
-  `${BASE}favicon.ico`,
 ];
 
-// Install: pre-cache all assets safely
+// Known files in each folder
+const JS_FILES = [
+  "brython.js",
+  "brython_stdlib.js",
+  "load_brython.js",
+  "classic.bry",
+  "advance.bry",
+  "index.bry",
+  "about.bry",
+];
+
+const CSS_FILES = ["styles.css"];
+
+const IMG_FILES = [
+  "wordle.png",
+  "wordle_192.png",
+  "wordle_512.png",
+  "favicon.ico",
+];
+
+// Combine all assets with folder paths
+const ASSETS = [
+  ...CORE_ASSETS,
+  ...JS_FILES.map(f => `${BASE}js/${f}`),
+  ...CSS_FILES.map(f => `${BASE}css/${f}`),
+  ...IMG_FILES.map(f => `${BASE}img/${f}`),
+];
+
+// Install: cache all assets
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
       Promise.all(
         ASSETS.map((url) =>
-          cache.add(url).catch((err) => {
-            console.warn("Failed to cache:", url, err);
-          })
+          cache.add(url).catch((err) =>
+            console.warn("Failed to cache:", url, err)
+          )
         )
       )
     )
@@ -54,25 +70,31 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch: offline-first strategy with fallback
+// Fetch: offline-first strategy with query-safe matching
 self.addEventListener("fetch", (event) => {
-  if (!event.request.url.includes(BASE)) return; // Ignore other apps
+  const request = event.request;
+
+  // Only handle requests within Wordle scope
+  if (!request.url.includes(BASE)) return;
 
   event.respondWith((async () => {
-    const cached = await caches.match(event.request);
+    // Strip query string for cache matching
+    const urlWithoutQuery = new URL(request.url);
+    urlWithoutQuery.search = "";
+
+    const cached = await caches.match(urlWithoutQuery.toString());
     if (cached) return cached;
 
     try {
-      const response = await fetch(event.request);
-      if (response.ok && event.request.method === "GET") {
-        const responseClone = response.clone();
+      const response = await fetch(request);
+      if (response.ok && request.method === "GET") {
         const cache = await caches.open(CACHE_NAME);
-        await cache.put(event.request, responseClone);
+        await cache.put(urlWithoutQuery.toString(), response.clone());
       }
       return response;
     } catch (err) {
-      // Offline fallback for HTML pages
-      if (event.request.destination === "document") {
+      // Offline fallback for navigation (HTML)
+      if (request.destination === "document") {
         return caches.match(`${BASE}index.html`);
       }
       // Offline fallback for other assets
