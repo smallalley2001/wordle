@@ -1,8 +1,8 @@
 // Wordle PWA Service Worker
-const CACHE_NAME = "wordle-cache-v2";
+const CACHE_NAME = "wordle-cache-v3";
 const BASE = "/wordle/";
 
-// List every file Wordle uses
+// List all assets Wordle uses
 const ASSETS = [
   `${BASE}`,
   `${BASE}index.html`,
@@ -40,11 +40,15 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Activate: remove old caches
+// Activate: remove only old Wordle caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.map((key) => (key !== CACHE_NAME ? caches.delete(key) : null)))
+      Promise.all(
+        keys
+          .filter((key) => key.startsWith("wordle-cache-") && key !== CACHE_NAME)
+          .map((key) => caches.delete(key))
+      )
     )
   );
   self.clients.claim();
@@ -60,17 +64,19 @@ self.addEventListener("fetch", (event) => {
 
       return fetch(event.request)
         .then((res) => {
-          if (res.ok) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, res.clone()));
+          if (res.ok && event.request.method === "GET") {
+            caches.open(CACHE_NAME).then((cache) =>
+              cache.put(event.request, res.clone())
+            );
           }
           return res;
         })
         .catch(() => {
-          // Offline fallback
+          // Offline fallback for HTML pages
           if (event.request.destination === "document") {
             return caches.match(`${BASE}index.html`);
           }
-          // For other assets (images, scripts, CSS)
+          // Offline fallback for other assets
           return new Response("Offline resource not available", {
             status: 404,
             statusText: "Offline",
