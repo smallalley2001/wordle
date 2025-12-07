@@ -1,5 +1,5 @@
 // Wordle PWA Service Worker
-const CACHE_NAME = "wordle-cache-v3";
+const CACHE_NAME = "wordle-cache-v4";
 const BASE = "/wordle/";
 
 // List all assets Wordle uses
@@ -58,31 +58,29 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (!event.request.url.includes(BASE)) return; // Ignore other apps
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
+  event.respondWith((async () => {
+    const cached = await caches.match(event.request);
+    if (cached) return cached;
 
-      return fetch(event.request)
-        .then((res) => {
-          if (res.ok && event.request.method === "GET") {
-            caches.open(CACHE_NAME).then((cache) =>
-              cache.put(event.request, res.clone())
-            );
-          }
-          return res;
-        })
-        .catch(() => {
-          // Offline fallback for HTML pages
-          if (event.request.destination === "document") {
-            return caches.match(`${BASE}index.html`);
-          }
-          // Offline fallback for other assets
-          return new Response("Offline resource not available", {
-            status: 404,
-            statusText: "Offline",
-            headers: { "Content-Type": "text/plain" },
-          });
-        });
-    })
-  );
+    try {
+      const response = await fetch(event.request);
+      if (response.ok && event.request.method === "GET") {
+        const responseClone = response.clone();
+        const cache = await caches.open(CACHE_NAME);
+        await cache.put(event.request, responseClone);
+      }
+      return response;
+    } catch (err) {
+      // Offline fallback for HTML pages
+      if (event.request.destination === "document") {
+        return caches.match(`${BASE}index.html`);
+      }
+      // Offline fallback for other assets
+      return new Response("Offline resource not available", {
+        status: 404,
+        statusText: "Offline",
+        headers: { "Content-Type": "text/plain" },
+      });
+    }
+  })());
 });
