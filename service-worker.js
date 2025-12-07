@@ -1,7 +1,6 @@
 const BASE = self.registration.scope.replace(location.origin, "");
-const CACHE_NAME = "wordle-cache-v6"; // bumped version
+const CACHE_NAME = "wordle-cache-v7"; // bump version
 
-// Pre-cache static resources
 const urlsToCache = [
   BASE,
   BASE + "index.html",
@@ -21,7 +20,7 @@ const urlsToCache = [
   BASE + "manifest.json"
 ];
 
-// Install: pre-cache everything
+// Install
 self.addEventListener("install", event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
@@ -29,7 +28,7 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 });
 
-// Activate: remove old caches
+// Activate
 self.addEventListener("activate", event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -39,29 +38,27 @@ self.addEventListener("activate", event => {
   self.clients.claim();
 });
 
-// Fetch: offline-first with runtime caching + navigation fallback
+// Fetch
 self.addEventListener("fetch", event => {
   const request = event.request;
-  const urlWithoutQuery = request.url.split("?")[0];
+
+  // Normalize URL: remove origin and query string
+  let key = request.url.replace(location.origin, "");
+  key = key.split("?")[0]; 
 
   event.respondWith(
-    caches.match(urlWithoutQuery, { ignoreSearch: true }).then(cached => {
+    caches.match(key, { ignoreSearch: true }).then(cached => {
       if (cached) return cached;
 
-      return fetch(urlWithoutQuery).then(response => {
-        // Clone response immediately for caching
-        const responseClone = response.clone();
-
-        // Cache dynamically any GET requests that succeed
+      return fetch(request).then(response => {
         if (request.method === "GET" && response.status === 200) {
-          caches.open(CACHE_NAME).then(cache => cache.put(urlWithoutQuery, responseClone));
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(key, responseClone));
         }
-
-        // Return the original response to the page
         return response;
       }).catch(() => {
-        // Offline fallback for navigation (HTML requests)
-        if (request.destination === "document") {
+        // Offline fallback for navigation
+        if (request.mode === "navigate") {
           return caches.match(BASE + "index.html");
         }
       });
